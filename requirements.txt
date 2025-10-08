@@ -1,11 +1,15 @@
 Thư viện chính cho Streamlit
-streamlit
+streamlit==1.35.0
 
 Thư viện xử lý dữ liệu (DataFrame)
-pandas
+pandas==2.2.2
 
-Thư viện cho chức năng AI (Gemini) - ĐÂY LÀ DÒNG BỊ THIẾU
-google-generativeai
+Thư viện cho chức năng AI (Gemini)
+google-generativeai==0.5.4
 
 Thư viện cần thiết để pandas đọc file Excel (.xlsx)
-openpyxl
+openpyxl==3.1.2
+
+GHIM PHIÊN BẢN CÁC THƯ VIỆN PHỤ THUỘC QUAN TRỌNG ĐỂ TRÁNH XUNG ĐỘT
+Thư viện cốt lõi cho các dịch vụ Google
+protobuf==4.25.3
