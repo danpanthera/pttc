@@ -10,6 +10,10 @@ google-generativeai==0.5.4
 Thư viện cần thiết để pandas đọc file Excel (.xlsx)
 openpyxl==3.1.2
 
-GHIM PHIÊN BẢN CÁC THƯ VIỆN PHỤ THUỘC QUAN TRỌNG ĐỂ TRÁNH XUNG ĐỘT
-Thư viện cốt lõi cho các dịch vụ Google
-protobuf==4.25.3
+--- GIẢI PHÁP TRIỆT ĐỂ: GHIM CÁC THƯ VIỆN PHỤ THUỘC CỐT LÕI ---
+Việc này giúp giải quyết xung đột phiên bản "ngầm" giữa Streamlit và Google.
+grpcio==1.60.1
+protobuf==4.25.1
+google-api-python-client==2.110.0
+google-auth-httplib2==0.1.1
+google-auth==2.27.0
