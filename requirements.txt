@@ -7,13 +7,12 @@ pandas==2.2.2
 Thư viện cho chức năng AI (Gemini)
 google-generativeai==0.5.4
 
-Thư viện cần thiết để pandas đọc file Excel (.xlsx)
-openpyxl==3.1.2
+--- THƯ VIỆN BẮT BUỘC CHO APP THẨM ĐỊNH DỰ ÁN TỪ FILE WORD ---
+Thư viện đọc file .docx (thay thế cho openpyxl)
+python-docx==1.1.2
 
---- GIẢI PHÁP TRIỆT ĐỂ: GHIM CÁC THƯ VIỆN PHỤ THUỘC CỐT LÕI ---
-Việc này giúp giải quyết xung đột phiên bản "ngầm" giữa Streamlit và Google.
-grpcio==1.60.1
-protobuf==4.25.1
-google-api-python-client==2.110.0
-google-auth-httplib2==0.1.1
-google-auth==2.27.0
+Thư viện tính toán tài chính (NPV, IRR)
+numpy-financial==1.0.0
+
+--- GHIM CÁC THƯ VIỆN PHỤ THUỘC ĐỂ ĐẢM BẢO ỔN ĐỊNH ---
+protobuf==4.25.3
