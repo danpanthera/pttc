@@ -1,9 +1,7 @@
-# python.py
-
 import streamlit as st
 import pandas as pd
-from google import genai
-from google.genai.errors import APIError
+from google import generativeai as genai # Sửa lại import cho đúng chuẩn thư viện mới
+from google.api_core import exceptions as google_exceptions # Thêm để bắt lỗi API tốt hơn
 
 # --- Cấu hình Trang Streamlit ---
 st.set_page_config(
@@ -12,6 +10,14 @@ st.set_page_config(
 )
 
 st.title("Ứng dụng Phân Tích Báo Cáo Tài Chính 📊")
+
+# --- CẢNH BÁO BẢO MẬT & API KEY ---
+# API Key được gắn cứng trực tiếp vào code.
+# CẢNH BÁO: Việc này không an toàn nếu Sếp đẩy code lên GitHub công khai.
+# Bất kỳ ai cũng có thể thấy và sử dụng key của Sếp.
+# Chỉ nên dùng cho mục đích thử nghiệm trên máy cá nhân.
+API_KEY = "AIzaSyD1O9SaVFVUKf3Xpys8aF8BKfGvr9YP3PE"
+
 
 # --- Hàm tính toán chính (Sử dụng Caching để Tối ưu hiệu suất) ---
 @st.cache_data
@@ -39,17 +45,13 @@ def process_financial_data(df):
     tong_tai_san_N_1 = tong_tai_san_row['Năm trước'].iloc[0]
     tong_tai_san_N = tong_tai_san_row['Năm sau'].iloc[0]
 
-    # ******************************* PHẦN SỬA LỖI BẮT ĐẦU *******************************
-    # Lỗi xảy ra khi dùng .replace() trên giá trị đơn lẻ (numpy.int64).
-    # Sử dụng điều kiện ternary để xử lý giá trị 0 thủ công cho mẫu số.
-    
+    # Sử dụng điều kiện để xử lý giá trị 0 thủ công cho mẫu số.
     divisor_N_1 = tong_tai_san_N_1 if tong_tai_san_N_1 != 0 else 1e-9
     divisor_N = tong_tai_san_N if tong_tai_san_N != 0 else 1e-9
 
     # Tính tỷ trọng với mẫu số đã được xử lý
     df['Tỷ trọng Năm trước (%)'] = (df['Năm trước'] / divisor_N_1) * 100
     df['Tỷ trọng Năm sau (%)'] = (df['Năm sau'] / divisor_N) * 100
-    # ******************************* PHẦN SỬA LỖI KẾT THÚC *******************************
     
     return df
 
@@ -57,8 +59,8 @@ def process_financial_data(df):
 def get_ai_analysis(data_for_ai, api_key):
     """Gửi dữ liệu phân tích đến Gemini API và nhận nhận xét."""
     try:
-        client = genai.Client(api_key=api_key)
-        model_name = 'gemini-2.5-flash' 
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-pro') # Sử dụng model gemini-pro ổn định
 
         prompt = f"""
         Bạn là một chuyên gia phân tích tài chính chuyên nghiệp. Dựa trên các chỉ số tài chính sau, hãy đưa ra một nhận xét khách quan, ngắn gọn (khoảng 3-4 đoạn) về tình hình tài chính của doanh nghiệp. Đánh giá tập trung vào tốc độ tăng trưởng, thay đổi cơ cấu tài sản và khả năng thanh toán hiện hành.
@@ -66,17 +68,15 @@ def get_ai_analysis(data_for_ai, api_key):
         Dữ liệu thô và chỉ số:
         {data_for_ai}
         """
-
-        response = client.models.generate_content(
-            model=model_name,
-            contents=prompt
-        )
+        
+        response = model.generate_content(prompt)
         return response.text
 
-    except APIError as e:
-        return f"Lỗi gọi Gemini API: Vui lòng kiểm tra Khóa API hoặc giới hạn sử dụng. Chi tiết lỗi: {e}"
-    except KeyError:
-        return "Lỗi: Không tìm thấy Khóa API 'GEMINI_API_KEY'. Vui lòng kiểm tra cấu hình Secrets trên Streamlit Cloud."
+    # Bắt lỗi cụ thể hơn từ Google API
+    except google_exceptions.PermissionDenied:
+        return "Lỗi gọi Gemini API: API Key không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại."
+    except google_exceptions.InvalidArgument:
+        return "Lỗi gọi Gemini API: Dữ liệu gửi lên không hợp lệ."
     except Exception as e:
         return f"Đã xảy ra lỗi không xác định: {e}"
 
@@ -113,20 +113,19 @@ if uploaded_file is not None:
             st.subheader("4. Các Chỉ số Tài chính Cơ bản")
             
             try:
-                # Lọc giá trị cho Chỉ số Thanh toán Hiện hành (Ví dụ)
+                # Lọc giá trị cho Chỉ số Thanh toán Hiện hành
                 
                 # Lấy Tài sản ngắn hạn
                 tsnh_n = df_processed[df_processed['Chỉ tiêu'].str.contains('TÀI SẢN NGẮN HẠN', case=False, na=False)]['Năm sau'].iloc[0]
                 tsnh_n_1 = df_processed[df_processed['Chỉ tiêu'].str.contains('TÀI SẢN NGẮN HẠN', case=False, na=False)]['Năm trước'].iloc[0]
 
-                # Lấy Nợ ngắn hạn (Dùng giá trị giả định hoặc lọc từ file nếu có)
-                # **LƯU Ý: Thay thế logic sau nếu bạn có Nợ Ngắn Hạn trong file**
+                # Lấy Nợ ngắn hạn
                 no_ngan_han_N = df_processed[df_processed['Chỉ tiêu'].str.contains('NỢ NGẮN HẠN', case=False, na=False)]['Năm sau'].iloc[0]  
                 no_ngan_han_N_1 = df_processed[df_processed['Chỉ tiêu'].str.contains('NỢ NGẮN HẠN', case=False, na=False)]['Năm trước'].iloc[0]
 
                 # Tính toán
-                thanh_toan_hien_hanh_N = tsnh_n / no_ngan_han_N
-                thanh_toan_hien_hanh_N_1 = tsnh_n_1 / no_ngan_han_N_1
+                thanh_toan_hien_hanh_N = tsnh_n / no_ngan_han_N if no_ngan_han_N != 0 else 0
+                thanh_toan_hien_hanh_N_1 = tsnh_n_1 / no_ngan_han_N_1 if no_ngan_han_N_1 != 0 else 0
                 
                 col1, col2 = st.columns(2)
                 with col1:
@@ -141,10 +140,10 @@ if uploaded_file is not None:
                         delta=f"{thanh_toan_hien_hanh_N - thanh_toan_hien_hanh_N_1:.2f}"
                     )
                     
-            except IndexError:
-                 st.warning("Thiếu chỉ tiêu 'TÀI SẢN NGẮN HẠN' hoặc 'NỢ NGẮN HẠN' để tính chỉ số.")
-                 thanh_toan_hien_hanh_N = "N/A" # Dùng để tránh lỗi ở Chức năng 5
-                 thanh_toan_hien_hanh_N_1 = "N/A"
+            except (IndexError, KeyError):
+                st.warning("Thiếu chỉ tiêu 'TÀI SẢN NGẮN HẠN' hoặc 'NỢ NGẮN HẠN' để tính chỉ số.")
+                thanh_toan_hien_hanh_N = "N/A" # Dùng để tránh lỗi ở Chức năng 5
+                thanh_toan_hien_hanh_N_1 = "N/A"
             
             # --- Chức năng 5: Nhận xét AI ---
             st.subheader("5. Nhận xét Tình hình Tài chính (AI)")
@@ -166,15 +165,11 @@ if uploaded_file is not None:
             }).to_markdown(index=False) 
 
             if st.button("Yêu cầu AI Phân tích"):
-                api_key = st.secrets.get("GEMINI_API_KEY") 
-                
-                if api_key:
-                    with st.spinner('Đang gửi dữ liệu và chờ Gemini phân tích...'):
-                        ai_result = get_ai_analysis(data_for_ai, api_key)
-                        st.markdown("**Kết quả Phân tích từ Gemini AI:**")
-                        st.info(ai_result)
-                else:
-                     st.error("Lỗi: Không tìm thấy Khóa API. Vui lòng cấu hình Khóa 'GEMINI_API_KEY' trong Streamlit Secrets.")
+                with st.spinner('Đang gửi dữ liệu và chờ Gemini phân tích...'):
+                    # Sử dụng API Key đã được khai báo ở trên
+                    ai_result = get_ai_analysis(data_for_ai, API_KEY)
+                    st.markdown("**Kết quả Phân tích từ Gemini AI:**")
+                    st.info(ai_result)
 
     except ValueError as ve:
         st.error(f"Lỗi cấu trúc dữ liệu: {ve}")
@@ -183,3 +178,4 @@ if uploaded_file is not None:
 
 else:
     st.info("Vui lòng tải lên file Excel để bắt đầu phân tích.")
+
