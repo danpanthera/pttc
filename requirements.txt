@@ -1,17 +1,17 @@
-# --- Thư viện chính cho Streamlit ---
+# Thư viện chính
 streamlit==1.35.0
 
-# --- Thư viện xử lý dữ liệu ---
+# Xử lý dữ liệu
 pandas==2.2.2
 
-# --- Thư viện cho chức năng AI (Gemini) ---
-google-generativeai>=0.5.4
+# AI Gemini
+google-generativeai==0.5.4
 
-# --- Thư viện đọc file .docx ---
+# Đọc file Word
 python-docx==1.1.2
 
-# --- Thư viện tính toán tài chính ---
+# Tính toán tài chính
 numpy-financial==1.0.0
 
-# --- Thư viện phụ thuộc ---
+# Phụ thuộc cần ghim
 protobuf==4.25.3
